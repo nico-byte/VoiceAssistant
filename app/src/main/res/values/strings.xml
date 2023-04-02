@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">VoiceAssistant</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_user">UserActivity</string>
+    <string name="title_activity_gptactivity">GPTActivity</string>
+    <string name="title_activity_sign_in">SignInActivity</string>
 </resources>

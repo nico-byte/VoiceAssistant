@@ -12,6 +12,21 @@
         android:theme="@style/Theme.VoiceAssistant"
         tools:targetApi="31">
         <activity
+            android:name=".SignInActivity"
+            android:exported="false"
+            android:label="@string/title_activity_sign_in"
+            android:theme="@style/Theme.VoiceAssistant" />
+        <activity
+            android:name=".GPTActivity"
+            android:exported="false"
+            android:label="@string/title_activity_gptactivity"
+            android:theme="@style/Theme.VoiceAssistant" />
+        <activity
+            android:name=".LogInActivity"
+            android:exported="false"
+            android:label="@string/title_activity_user"
+            android:theme="@style/Theme.VoiceAssistant" />
+        <activity
             android:name=".MainActivity"
             android:exported="false"
             android:label="@string/title_activity_main"
