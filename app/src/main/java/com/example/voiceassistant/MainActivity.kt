@@ -7,12 +7,16 @@ import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 
@@ -25,15 +29,21 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun MainActivityComposable() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.aligned(Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(modifier = Modifier
+        .fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
+        Image(
+            painterResource(id = R.drawable.musky),
+            contentDescription = "",
+            contentScale = ContentScale.FillBounds, // or some other scale
+            modifier = Modifier.matchParentSize()
+        )
         val context = LocalContext.current
 
-        Button(onClick = {
+        Button(
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+            onClick = {
             context.startActivity(Intent(context, LogInActivity::class.java))
         }) {
             Text(text = "Let's get started!")
