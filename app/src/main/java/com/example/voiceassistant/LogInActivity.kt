@@ -52,7 +52,7 @@ class LogInActivity : ComponentActivity() {
             )
             "register" -> RegistrationScreen(
                 userManager = userManager,
-                onUserRegistered = { _ ->
+                onUserRegistered = {
                     currentScreen = "login"
                 }
             )
@@ -146,17 +146,17 @@ fun ChoiceScreen() {
 
 @Composable
 fun RegistrationScreen(userManager: UserManager, onUserRegistered: (User) -> Unit) {
-    var (username, setUsername) = remember {
+    val (username, setUsername) = remember {
         mutableStateOf(TextFieldValue())
     }
 
-    var (password, setPassword) = remember {
+    val (password, setPassword) = remember {
         mutableStateOf(TextFieldValue())
     }
 
     var passwordHidden by rememberSaveable { mutableStateOf(true) }
 
-    var (apiKey, setApiKey) = remember {
+    val (apiKey, setApiKey) = remember {
         mutableStateOf(TextFieldValue())
     }
     var apiKeyHidden by rememberSaveable { mutableStateOf(true) }
@@ -268,7 +268,6 @@ fun RegistrationScreen(userManager: UserManager, onUserRegistered: (User) -> Uni
                 }
             )
             val uriHandler = LocalUriHandler.current
-            val context = LocalContext.current
             Button(
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
                 onClick = {
@@ -293,11 +292,11 @@ fun RegistrationScreen(userManager: UserManager, onUserRegistered: (User) -> Uni
 
 @Composable
 fun LoginScreen(userManager: UserManager, onSuccess: () -> Unit, onFailure: () -> Unit) {
-    var (username, setUsername) = remember {
+    val (username, setUsername) = remember {
         mutableStateOf(TextFieldValue())
     }
 
-    var (password, setPassword) = remember {
+    val (password, setPassword) = remember {
         mutableStateOf(TextFieldValue())
     }
 

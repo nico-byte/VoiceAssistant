@@ -7,7 +7,7 @@ import com.google.gson.reflect.TypeToken
 
 data class User(val username: String, val password: String, val apiKey: String)
 
-class UserManager(private val context: Context, private val gson: Gson) {
+class UserManager(context: Context, private val gson: Gson) {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("user_preferences", Context.MODE_PRIVATE)
 
