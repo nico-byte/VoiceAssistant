@@ -12,9 +12,14 @@
         android:theme="@style/Theme.VoiceAssistant"
         tools:targetApi="31">
         <activity
-            android:name=".SignInActivity"
+            android:name=".NotesActivity"
             android:exported="false"
-            android:label="@string/title_activity_sign_in"
+            android:label="@string/title_activity_notes"
+            android:theme="@style/Theme.VoiceAssistant" />
+        <activity
+            android:name=".UserManager"
+            android:exported="false"
+            android:label="@string/title_activity_user_manager"
             android:theme="@style/Theme.VoiceAssistant" />
         <activity
             android:name=".GPTActivity"

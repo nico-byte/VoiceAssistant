@@ -1,8 +1,6 @@
 package com.example.voiceassistant
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -46,7 +44,7 @@ fun MainActivityComposable() {
             onClick = {
             context.startActivity(Intent(context, LogInActivity::class.java))
         }) {
-            Text(text = "Let's get started!")
+            Text("Let's get started!")
         }
     }
 }
@@ -57,31 +55,4 @@ fun MainActivityComposable() {
 @Composable
 fun DefaultPreview() {
     MainActivityComposable()
-}
-
-data class User(val username: String, val password: String, val apiKey: String)
-
-class AuthManager(context: Context) {
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences("user_data", Context.MODE_PRIVATE)
-
-    fun saveUser(user: User) {
-        with(sharedPreferences.edit()) {
-            putString("username", user.username)
-            putString("password", user.password)
-            putString("apiKey", user.apiKey)
-            apply()
-        }
-    }
-
-    fun loadUser(): User? {
-        val username = sharedPreferences.getString("username", null)
-        val password = sharedPreferences.getString("password", null)
-        val apiKey = sharedPreferences.getString("apiKey", null)
-
-        return if (username != null && password != null && apiKey != null) {
-            User(username, password, apiKey)
-        } else {
-            null
-        }
-    }
 }

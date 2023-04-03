@@ -29,17 +29,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.google.gson.Gson
 
 class LogInActivity : ComponentActivity() {
-    private lateinit var authManager: AuthManager
-    private var registeredUser: User? = null
+    private lateinit var userManager: UserManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        authManager = AuthManager(this)
-        registeredUser = authManager.loadUser()
-        setContent { LogIn()
-        }
+        val gson = Gson()
+        userManager = UserManager(this, gson)
+        setContent { LogIn() }
     }
 
     @Composable
@@ -51,36 +50,54 @@ class LogInActivity : ComponentActivity() {
                 onLoginSelected = { currentScreen = "login" },
                 onRegisterSelected = { currentScreen = "register" }
             )
-            "register" -> RegistrationScreen { username, password, apiKey ->
-                val newUser = User(username, password, apiKey) // Corrected variable name
-                authManager.saveUser(newUser) // Save the user data
-                registeredUser = newUser
-                currentScreen = "login"
-            }
-            "login" -> LoginScreen { username, password ->
-                registeredUser?.let {
-                    if (it.username == username && it.password == password) {
-                        startActivity(Intent(this@LogInActivity, GPTActivity::class.java))
-                    } else {
-                        // Handle failed login, for example, show an error message
-                    }
+            "register" -> RegistrationScreen(
+                userManager = userManager,
+                onUserRegistered = { _ ->
+                    currentScreen = "login"
                 }
-            }
+            )
+            "login" -> LoginScreen(
+                userManager = userManager,
+                onSuccess = {
+                    currentScreen = "choice"
+                },
+                onFailure = {
+                    //TODO: Add Handling for unsuccessful Login
+                }
+            )
+            "choice" -> ChoiceScreen()
         }
     }
+}
 
-    @Composable
-    fun WelcomeScreen(onLoginSelected: () -> Unit, onRegisterSelected: () -> Unit) {
+@Composable
+fun WelcomeScreen(onLoginSelected: () -> Unit, onRegisterSelected: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painterResource(id = R.drawable.musky),
+            contentDescription = "",
+            contentScale = ContentScale.FillBounds, // or some other scale
+            modifier = Modifier.matchParentSize()
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize(),
             verticalArrangement = Arrangement.aligned(Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = onLoginSelected) {
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = onLoginSelected) {
                 Text("LOG IN")
             }
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onRegisterSelected) {
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = onRegisterSelected) {
                 Text("REGISTER")
             }
         }
@@ -88,7 +105,47 @@ class LogInActivity : ComponentActivity() {
 }
 
 @Composable
-fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
+fun ChoiceScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painterResource(id = R.drawable.musky),
+            contentDescription = "",
+            contentScale = ContentScale.FillBounds, // or some other scale
+            modifier = Modifier.matchParentSize()
+        )
+        val context = LocalContext.current
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.aligned(Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = {
+                    context.startActivity(Intent(context, GPTActivity::class.java))
+                }) {
+                Text("GPT")
+            }
+            Spacer(Modifier.height(8.dp))
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = {
+                    context.startActivity(Intent(context, NotesActivity::class.java))
+                }) {
+                Text("Notes")
+            }
+        }
+    }
+}
+
+@Composable
+fun RegistrationScreen(userManager: UserManager, onUserRegistered: (User) -> Unit) {
     var (username, setUsername) = remember {
         mutableStateOf(TextFieldValue())
     }
@@ -121,9 +178,10 @@ fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
             OutlinedTextField(
                 value = username,
                 colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.White,
                     focusedBorderColor = Color.Cyan,
                     unfocusedBorderColor = Color.Cyan,
-                    cursorColor = Color.Black,
+                    cursorColor = Color.White,
                     backgroundColor = Color.DarkGray,
                     disabledLabelColor = Color.Transparent,
                     focusedLabelColor = Color.Cyan,
@@ -148,13 +206,15 @@ fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
 
             OutlinedTextField(
                 value = password,
-                colors = TextFieldDefaults.textFieldColors(
-                    cursorColor = Color.Black,
-                    backgroundColor = Color.White,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.White,
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Cyan,
+                    cursorColor = Color.White,
+                    backgroundColor = Color.DarkGray,
                     disabledLabelColor = Color.Transparent,
-                    focusedLabelColor = Color.Transparent,
-                    unfocusedLabelColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
+                    focusedLabelColor = Color.Cyan,
+                    unfocusedLabelColor = Color.Cyan,
                 ),
                 onValueChange = { newPassword ->
                     setPassword(newPassword.ofMaxLength(32))
@@ -178,13 +238,15 @@ fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
 
             OutlinedTextField(
                 value = apiKey,
-                colors = TextFieldDefaults.textFieldColors(
-                    cursorColor = Color.Black,
-                    backgroundColor = Color.White,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.White,
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Cyan,
+                    cursorColor = Color.White,
+                    backgroundColor = Color.DarkGray,
                     disabledLabelColor = Color.Transparent,
-                    focusedLabelColor = Color.Transparent,
-                    unfocusedLabelColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
+                    focusedLabelColor = Color.Cyan,
+                    unfocusedLabelColor = Color.Cyan,
                 ),
                 onValueChange = { newApiKey ->
                     setApiKey(newApiKey.ofMaxLength(1024))
@@ -207,14 +269,20 @@ fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
             )
             val uriHandler = LocalUriHandler.current
             val context = LocalContext.current
-            Button(onClick = {
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = {
                 uriHandler.openUri("https://platform.openai.com/account/api-keys")
             }, shape = RoundedCornerShape(20.dp)) {
                 Text(text = "GET API KEY")
             }
 
-            Button(onClick = {
-                onRegister(username.toString(), password.toString(), apiKey.toString())
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = {
+                val newUser = User(username.text, password.text, apiKey.text)
+                userManager.saveUser(newUser)
+                onUserRegistered(newUser)
             }, shape = RoundedCornerShape(20.dp)) {
                 Text(text = "SIGN IN")
             }
@@ -224,17 +292,20 @@ fun RegistrationScreen(onRegister: (String, String, String) -> Unit) {
 
 
 @Composable
-fun LoginScreen(onLogin: (String, String) -> Unit) {
+fun LoginScreen(userManager: UserManager, onSuccess: () -> Unit, onFailure: () -> Unit) {
     var (username, setUsername) = remember {
-        mutableStateOf(TextFieldValue()) }
+        mutableStateOf(TextFieldValue())
+    }
 
     var (password, setPassword) = remember {
-        mutableStateOf(TextFieldValue()) }
+        mutableStateOf(TextFieldValue())
+    }
 
     var passwordHidden by rememberSaveable { mutableStateOf(true) }
 
-    Box(modifier = Modifier
-        .fillMaxSize(),
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -243,67 +314,84 @@ fun LoginScreen(onLogin: (String, String) -> Unit) {
             contentScale = ContentScale.FillBounds, // or some other scale
             modifier = Modifier.matchParentSize()
         )
-        OutlinedTextField(
-            value = username,
-            colors = TextFieldDefaults.textFieldColors(
-                cursorColor = Color.Black,
-                backgroundColor = Color.White,
-                disabledLabelColor = Color.Transparent,
-                focusedLabelColor = Color.Transparent,
-                unfocusedLabelColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-            ),
-            onValueChange = { newUsername ->
-                setUsername(newUsername.ofMaxLength(16))
-            },
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true,
-            label = { Text("Enter Username") },
-            trailingIcon = {
-                Icon(Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier
-                        .clickable {
-                            setUsername(TextFieldValue(""))
-                        }
-                )
-            }
-        )
-
-        OutlinedTextField(
-            value = password,
-            colors = TextFieldDefaults.textFieldColors(
-                cursorColor = Color.Black,
-                backgroundColor = Color.White,
-                disabledLabelColor = Color.Transparent,
-                focusedLabelColor = Color.Transparent,
-                unfocusedLabelColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-            ),
-            onValueChange = { newPassword ->
-                setPassword(newPassword.ofMaxLength(32))
-            },
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true,
-            label = { Text("Enter password") },
-            visualTransformation =
-            if (passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = {
-                IconButton(onClick = { passwordHidden = !passwordHidden }) {
-                    val visibilityIcon =
-                        if (passwordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    // Please provide localized description for accessibility services
-                    val description = if (passwordHidden) "Show password" else "Hide password"
-                    Icon(imageVector = visibilityIcon, contentDescription = description)
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = username,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.White,
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Cyan,
+                    cursorColor = Color.White,
+                    backgroundColor = Color.DarkGray,
+                    disabledLabelColor = Color.Transparent,
+                    focusedLabelColor = Color.Cyan,
+                    unfocusedLabelColor = Color.Cyan,
+                ),
+                onValueChange = { newUsername ->
+                    setUsername(newUsername.ofMaxLength(16))
+                },
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true,
+                label = { Text("Enter Username") },
+                trailingIcon = {
+                    Icon(Icons.Default.Clear,
+                        contentDescription = "clear text",
+                        modifier = Modifier
+                            .clickable {
+                                setUsername(TextFieldValue(""))
+                            }
+                    )
                 }
-            }
-        )
+            )
 
-        Button(onClick = {
-            onLogin(username.toString(), password.toString())
-        }, shape = RoundedCornerShape(20.dp)) {
-            Text(text = "LOG IN")
+            OutlinedTextField(
+                value = password,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.White,
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.Cyan,
+                    cursorColor = Color.White,
+                    backgroundColor = Color.DarkGray,
+                    disabledLabelColor = Color.Transparent,
+                    focusedLabelColor = Color.Cyan,
+                    unfocusedLabelColor = Color.Cyan,
+                ),
+                onValueChange = { newPassword ->
+                    setPassword(newPassword.ofMaxLength(32))
+                },
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true,
+                label = { Text("Enter password") },
+                visualTransformation =
+                if (passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = { passwordHidden = !passwordHidden }) {
+                        val visibilityIcon =
+                            if (passwordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                        // Please provide localized description for accessibility services
+                        val description = if (passwordHidden) "Show password" else "Hide password"
+                        Icon(imageVector = visibilityIcon, contentDescription = description)
+                    }
+                }
+            )
+
+            Button(
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
+                onClick = {
+                val users = userManager.loadUsers()
+                val user = users.find { it.username == username.text && it.password == password.text }
+                if (user != null) {
+                    onSuccess()
+                } else {
+                    onFailure()
+                }
+            }, shape = RoundedCornerShape(20.dp)) {
+                Text(text = "LOG IN")
+            }
         }
     }
 }
