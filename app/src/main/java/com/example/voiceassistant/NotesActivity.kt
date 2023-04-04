@@ -62,7 +62,8 @@ fun Notes(userManager: UserManager) {
                 backgroundColor = Color.Transparent,
                 topBar = {
                     TopAppBar(
-                        backgroundColor = Color.Cyan,
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White,
                         title = { Text(text = "User Management") },
                         navigationIcon = {
                             IconButton(onClick = {

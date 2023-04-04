@@ -1,10 +1,10 @@
 package com.example.voiceassistant
 
+import android.graphics.Paint.Align
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -29,12 +29,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import com.google.gson.Gson
-import com.example.voiceassistant.ofMaxLength
 
 
 class GPTActivity : ComponentActivity() {
@@ -61,12 +61,12 @@ fun GPT(userManager: UserManager) {
             painterResource(id = R.drawable.musky),
             contentDescription = "",
             contentScale = ContentScale.FillBounds, // or some other scale
-            modifier = Modifier.matchParentSize().zIndex(0f)
+            modifier = Modifier
+                .matchParentSize()
+                .zIndex(0f)
         )
         ModalDrawer(
             drawerState = drawerState,
-            drawerBackgroundColor = Color.DarkGray,
-            drawerContentColor = Color.White,
             drawerContent = {
                 DrawerContent(users, onCloseDrawer = {
                     coroutineScope.launch {
@@ -123,7 +123,6 @@ fun DrawerContent(users: List<User>, onCloseDrawer: () -> Unit) {
 
                 ListItem(
                     text = { Text(text = user.username) },
-                    secondaryText = { Text(text = user.apiKey) },
                     modifier = Modifier.clickable {
                         showDialog.value = true
                     }
@@ -140,13 +139,18 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
     val (newApiKey, setNewApiKey) = rememberSaveable { mutableStateOf(user.apiKey) }
     val (currentPassword, setCurrentPassword) = rememberSaveable { mutableStateOf("") }
     val (newPassword, setNewPassword) = rememberSaveable { mutableStateOf("") }
-    var passwordHidden by rememberSaveable { mutableStateOf(true) }
+    val (validateNewPassword, setValidateNewPassword) = rememberSaveable { mutableStateOf("") }
+    var currentPasswordHidden by rememberSaveable { mutableStateOf(true) }
+    var newPasswordHidden by rememberSaveable { mutableStateOf(true) }
+    var validatePasswordHidden by rememberSaveable { mutableStateOf(true) }
     var apiKeyHidden by rememberSaveable { mutableStateOf(true) }
 
     AlertDialog(
         backgroundColor = Color.DarkGray,
+        contentColor = Color.White,
         onDismissRequest = { onCloseDialog() },
         title = { Text("Edit User") },
+
         text = {
             Column {
                 OutlinedTextField(
@@ -210,58 +214,118 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
                 )
                 OutlinedTextField(
                     value = currentPassword,
-                    onValueChange = setCurrentPassword,
-                    label = { Text("Current Password") }
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.White,
+                        focusedBorderColor = Color.Cyan,
+                        unfocusedBorderColor = Color.Cyan,
+                        cursorColor = Color.White,
+                        backgroundColor = Color.DarkGray,
+                        disabledLabelColor = Color.Transparent,
+                        focusedLabelColor = Color.Cyan,
+                        unfocusedLabelColor = Color.Cyan,
+                    ),
+                    onValueChange = { newCurrentPassword ->
+                        setCurrentPassword(newCurrentPassword.take(32))
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    label = { Text("Current Password") },
+                    visualTransformation =
+                    if (currentPasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { currentPasswordHidden = !currentPasswordHidden }) {
+                            val visibilityIcon =
+                                if (currentPasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            // Please provide localized description for accessibility services
+                            val description = if (currentPasswordHidden) "Show password" else "Hide password"
+                            Icon(imageVector = visibilityIcon, contentDescription = description)
+                        }
+                    }
                 )
                 OutlinedTextField(
                     value = newPassword,
-                    onValueChange = setNewPassword,
-                    label = { Text("New Password") }
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.White,
+                        focusedBorderColor = Color.Cyan,
+                        unfocusedBorderColor = Color.Cyan,
+                        cursorColor = Color.White,
+                        backgroundColor = Color.DarkGray,
+                        disabledLabelColor = Color.Transparent,
+                        focusedLabelColor = Color.Cyan,
+                        unfocusedLabelColor = Color.Cyan,
+                    ),
+                    onValueChange = { newNewPassword ->
+                        setNewPassword(newNewPassword.take(32))
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    label = { Text("New Password") },
+                    visualTransformation =
+                    if (newPasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { newPasswordHidden = !newPasswordHidden }) {
+                            val visibilityIcon =
+                                if (newPasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            // Please provide localized description for accessibility services
+                            val description = if (newPasswordHidden) "Show password" else "Hide password"
+                            Icon(imageVector = visibilityIcon, contentDescription = description)
+                        }
+                    }
                 )
                 OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = setNewPassword,
-                    label = { Text("Validate Password") }
+                    value = validateNewPassword,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.White,
+                        focusedBorderColor = Color.Cyan,
+                        unfocusedBorderColor = Color.Cyan,
+                        cursorColor = Color.White,
+                        backgroundColor = Color.DarkGray,
+                        disabledLabelColor = Color.Transparent,
+                        focusedLabelColor = Color.Cyan,
+                        unfocusedLabelColor = Color.Cyan,
+                    ),
+                    onValueChange = { newValidatePassword ->
+                        setValidateNewPassword(newValidatePassword.take(32))
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    label = { Text("Validate Password") },
+                    visualTransformation =
+                    if (validatePasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { validatePasswordHidden = !validatePasswordHidden }) {
+                            val visibilityIcon =
+                                if (validatePasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            // Please provide localized description for accessibility services
+                            val description = if (validatePasswordHidden) "Show password" else "Hide password"
+                            Icon(imageVector = visibilityIcon, contentDescription = description)
+                        }
+                    }
                 )
             }
         },
         buttons = {
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.End
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Cyan,
+                        contentColor = Color.Black),
                     onClick = {
-                        // TODO: Validate current password and update user data (username, API key)
+                        // TODO: Validate password and update user data (username, API key, password)
                         onCloseDialog()
                     }
                 ) {
                     Text("Update User Info")
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                    onClick = {
-                        // TODO: Validate current password and update password
-                        onCloseDialog()
-                    }
-                ) {
-                    Text("Update Password")
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(
-                    onClick = {
-                        onCloseDialog()
-                    }
-                ) {
-                    Text("Cancel")
-                }
+                Spacer(modifier = Modifier.padding(8.dp))
             }
-        }
+        },
     )
 }
