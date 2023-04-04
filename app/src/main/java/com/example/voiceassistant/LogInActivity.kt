@@ -281,8 +281,8 @@ fun RegistrationScreen(userManager: UserManager, onUserRegistered: (User) -> Uni
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Cyan),
                 onClick = {
                 val newUser = User(username.text, password.text, apiKey.text)
-                    userManager.saveUser(newUser)
-                    onUserRegistered(newUser)
+                userManager.saveUser(newUser)
+                onUserRegistered(newUser)
             }, shape = RoundedCornerShape(20.dp)) {
                 Text(text = "SIGN IN")
             }
