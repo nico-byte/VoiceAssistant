@@ -2,6 +2,8 @@ package com.example.voiceassistant
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -39,5 +41,10 @@ class UserManager(context: Context, private val gson: Gson) {
         users.remove(user)
 
         sharedPreferences.edit().putString("users", gson.toJson(users)).apply()
+    }
+
+    fun loadUsersState(): MutableState<List<User>> {
+        val users = loadUsers()
+        return mutableStateOf(users)
     }
 }
