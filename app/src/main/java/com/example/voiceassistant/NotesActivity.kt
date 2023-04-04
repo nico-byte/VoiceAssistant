@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -45,7 +46,9 @@ fun Notes(userManager: UserManager) {
             painterResource(id = R.drawable.musky),
             contentDescription = "",
             contentScale = ContentScale.FillBounds, // or some other scale
-            modifier = Modifier.matchParentSize().zIndex(0f)
+            modifier = Modifier
+                .matchParentSize()
+                .zIndex(0f)
         )
         ModalDrawer(
             drawerState = drawerState,
@@ -72,6 +75,13 @@ fun Notes(userManager: UserManager) {
                                 }
                             }) {
                                 Icon(Icons.Filled.Menu, contentDescription = "Open Drawer")
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                // TODO: Add action for adding something
+                            }) {
+                                Icon(Icons.Filled.Add, contentDescription = "Add something", tint = Color.White)
                             }
                         }
                     )
