@@ -1,18 +1,16 @@
 package com.example.voiceassistant
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,16 +19,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
@@ -40,6 +34,7 @@ import androidx.navigation.compose.rememberNavController
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
+@ExperimentalAnimationApi
 class MainActivity : ComponentActivity() {
     private lateinit var userManager: UserManager
 
@@ -50,6 +45,7 @@ class MainActivity : ComponentActivity() {
         userManager = UserManager(this, gson)
 
         setContent {
+            this.window.statusBarColor = Color.Black.toArgb()
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -67,6 +63,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@ExperimentalAnimationApi
 @Composable
 fun Navigator(userManager: UserManager) {
     val navController = rememberNavController()
@@ -80,8 +77,7 @@ fun Navigator(userManager: UserManager) {
 
     NavHost(navController = navController, startDestination = startDest) {
         composable("Welcome") {
-            Information(navController)
-        }
+            Information(navController) }
         composable("SignUp") {
             RegistrationScreen(navController, userManager)
         }
@@ -108,6 +104,7 @@ fun Information(navController: NavHostController) {
     }
 }
 
+@ExperimentalAnimationApi
 @Composable
 fun RegistrationScreen(navController: NavHostController, userManager: UserManager) {
     val helper = Helper()
@@ -281,7 +278,7 @@ fun Notes(navController: NavHostController, userManager: UserManager) {
                 TopAppBar(
                     backgroundColor = Color.Transparent,
                     contentColor = Color.White,
-                    title = { Text(text = "User Management") },
+                    title = { Text(text = "Note Manager") },
                     navigationIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch {
@@ -294,10 +291,11 @@ fun Notes(navController: NavHostController, userManager: UserManager) {
                     actions = {
                         IconButton(onClick = {
                             // TODO: Add action for adding something
+                            navController.navigate("GPT")
                         }) {
                             Icon(
-                                Icons.Filled.Add,
-                                contentDescription = "Add something",
+                                Icons.Filled.Chat,
+                                contentDescription = "navigate to GPT",
                                 tint = Color.White
                             )
                         }
@@ -336,7 +334,7 @@ fun GPT(navController: NavHostController, userManager: UserManager, onNotes: () 
                 TopAppBar(
                     backgroundColor = Color.Transparent,
                     contentColor = Color.White,
-                    title = { Text(text = "User Management") },
+                    title = { Text(text = "Chat GPT 3.5 Turbo") },
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -345,6 +343,18 @@ fun GPT(navController: NavHostController, userManager: UserManager, onNotes: () 
                                 }
                             }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Open Drawer")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            // TODO: Add action for adding something
+                            navController.navigate("Notes")
+                        }) {
+                            Icon(
+                                Icons.Filled.Pages,
+                                contentDescription = "navigate to Notes",
+                                tint = Color.White
+                            )
                         }
                     }
                 )
@@ -435,7 +445,8 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
                     trailingIcon = {
                         IconButton(onClick = { apiKeyHidden = !apiKeyHidden }) {
                             val visibilityIcon =
-                                if (apiKeyHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                if (apiKeyHidden) Icons.Filled.Visibility
+                                else Icons.Filled.VisibilityOff
                             // Please provide localized description for accessibility services
                             val description = if (apiKeyHidden) "Show api key" else "Hide api key"
                             Icon(imageVector = visibilityIcon, contentDescription = description)
@@ -449,13 +460,16 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
                     },
                     label = "Current Password",
                     visualTransformation =
-                    if (currentPasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    if (currentPasswordHidden) PasswordVisualTransformation()
+                    else VisualTransformation.None,
                     trailingIcon = {
                         IconButton(onClick = { currentPasswordHidden = !currentPasswordHidden }) {
                             val visibilityIcon =
-                                if (currentPasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                if (currentPasswordHidden) Icons.Filled.Visibility
+                                else Icons.Filled.VisibilityOff
                             // Please provide localized description for accessibility services
-                            val description = if (currentPasswordHidden) "Show password" else "Hide password"
+                            val description = if (currentPasswordHidden) "Show password"
+                            else "Hide password"
                             Icon(imageVector = visibilityIcon, contentDescription = description)
                         }
                     }
@@ -467,13 +481,16 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
                     },
                     label = "New Password",
                     visualTransformation =
-                    if (newPasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    if (newPasswordHidden) PasswordVisualTransformation()
+                    else VisualTransformation.None,
                     trailingIcon = {
                         IconButton(onClick = { newPasswordHidden = !newPasswordHidden }) {
                             val visibilityIcon =
-                                if (newPasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                if (newPasswordHidden) Icons.Filled.Visibility
+                                else Icons.Filled.VisibilityOff
                             // Please provide localized description for accessibility services
-                            val description = if (newPasswordHidden) "Show password" else "Hide password"
+                            val description = if (newPasswordHidden) "Show password"
+                            else "Hide password"
                             Icon(imageVector = visibilityIcon, contentDescription = description)
                         }
                     }
@@ -485,13 +502,16 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
                     },
                     label = "Validate Password",
                     visualTransformation =
-                    if (validatePasswordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    if (validatePasswordHidden) PasswordVisualTransformation()
+                    else VisualTransformation.None,
                     trailingIcon = {
                         IconButton(onClick = { validatePasswordHidden = !validatePasswordHidden }) {
                             val visibilityIcon =
-                                if (validatePasswordHidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                if (validatePasswordHidden) Icons.Filled.Visibility
+                                else Icons.Filled.VisibilityOff
                             // Please provide localized description for accessibility services
-                            val description = if (validatePasswordHidden) "Show password" else "Hide password"
+                            val description = if (validatePasswordHidden) "Show password"
+                            else "Hide password"
                             Icon(imageVector = visibilityIcon, contentDescription = description)
                         }
                     }
@@ -523,27 +543,57 @@ fun UserEditDialog(user: User, onCloseDialog: () -> Unit) {
 
 @Composable
 fun BottomNavigationBar() {
-    val items = listOf(
-        NavigationItem.Help,
-        NavigationItem.Mic,
-        NavigationItem.Add,
-    )
-    BottomNavigation(
-        backgroundColor = Color.DarkGray,
-        contentColor = Color.White
-    ) {
-        items.forEach { item ->
-            BottomNavigationItem(
-                icon = { Icon(painterResource(id = item.icon), contentDescription = item.title) },
-                label = { Text(text = item.title) },
-                selectedContentColor = Color.White,
-                unselectedContentColor = Color.White.copy(0.4f),
-                alwaysShowLabel = true,
-                selected = false,
-                onClick = {
-                    /* Add code later */
+    BottomAppBar(
+        backgroundColor = Color.Transparent,
+        content = {
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .absoluteOffset(x = -(50).dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White
+                    ),
+                    onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.HelpCenter,
+                        contentDescription = "Help Page"
+                    )
                 }
-            )
+                Button(
+                    modifier = Modifier
+                        .size(100.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.Cyan
+                    ),
+                    onClick = {}) {
+                    Icon(
+                        modifier = Modifier
+                            .size(100.dp),
+                        imageVector = Icons.Default.Chat,
+                        contentDescription = "Microphone"
+                    )
+                }
+                Button(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .absoluteOffset(x = 50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White
+                    ),
+                    onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.NoteAdd,
+                        contentDescription = "Add Note"
+                    )
+
+                }
+            }
         }
-    }
+    )
 }
