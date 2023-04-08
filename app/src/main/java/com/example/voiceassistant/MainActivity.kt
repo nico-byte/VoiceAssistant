@@ -365,6 +365,11 @@ fun GPT(navController: NavHostController, userManager: UserManager, onNotes: () 
                     }
                 )
             },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { /*TODO*/ }) {
+                    Icon(Icons.Filled.Mic, "")
+                }
+            },
             bottomBar = { BottomNavigationBar() },
             content = { padding ->
                 Column(modifier = Modifier.padding(padding)) {
