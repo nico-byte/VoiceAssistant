@@ -1,5 +1,6 @@
 package com.example.voiceassistant
 
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -301,6 +302,11 @@ fun Notes(navController: NavHostController, userManager: UserManager) {
                         }
                     }
                 )
+            },
+            floatingActionButton = {
+                                   FloatingActionButton(onClick = { /*TODO*/ }) {
+                                       Icon(Icons.Filled.Mic, "")
+                                   }
             },
             bottomBar = { BottomNavigationBar() },
             content = { padding ->
