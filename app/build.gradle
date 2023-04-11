@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace 'com.example.voiceassistant'
-    compileSdk 33
+    compileSdkPreview = "UpsideDownCake"
 
     buildFeatures {
         compose = true

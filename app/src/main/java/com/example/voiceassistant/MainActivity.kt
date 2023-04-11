@@ -1,5 +1,6 @@
 package com.example.voiceassistant
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -333,12 +336,15 @@ fun Notes(navController: NavHostController, userManager: UserManager,
     }
 }
 
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun GPT(navController: NavHostController, userManager: UserManager,
         isButton1Enabled: Boolean, isButton2Enabled: Boolean, onNotes: () -> Unit) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val user = userManager.loadUsers()
     val coroutineScope = rememberCoroutineScope()
+    val (username, setUsername) = rememberSaveable { mutableStateOf("") }
+
     ModalDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -390,11 +396,43 @@ fun GPT(navController: NavHostController, userManager: UserManager,
             isFloatingActionButtonDocked = true,
             bottomBar = { BottomNavigationBar(navController, isButton1Enabled, isButton2Enabled,
             showNotesButton = true, showGPTButton = false) },
-            content = { padding ->
-                Column(modifier = Modifier.padding(padding)) {
-                    //TODO: Add GPT UI and integrate API (Whisper and GPT)
-                }
+            content = {  padding ->
+                // TODO add function for previewing and displaying chat history with chat gpt
             }
+        )
+    }
+}
+
+@Composable
+fun ChatGptHistory () {
+    Column(modifier = Modifier
+    ) {
+        //TODO: Add GPT UI and integrate API (Whisper and GPT)
+        val minWidth = 140
+        val maxWidth = 200
+        OutlinedTextField(
+            modifier = Modifier
+                .widthIn(minWidth.dp, maxWidth.dp)
+                .requiredWidth(maxWidth.dp + 150.dp)
+                .absoluteOffset(x = 50.dp),
+            value = username,
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                textColor = Color.White,
+                focusedBorderColor = Color.Cyan,
+                unfocusedBorderColor = Color.Cyan,
+                cursorColor = Color.White,
+                backgroundColor = Color.DarkGray,
+                disabledLabelColor = Color.Transparent,
+                focusedLabelColor = Color.Cyan,
+                unfocusedLabelColor = Color.Cyan,
+            ),
+            onValueChange = { newUsername ->
+                setUsername(newUsername)
+            },
+            shape = RoundedCornerShape(8.dp),
+            singleLine = false,
+            label = { Text("Textfield") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
     }
 }
@@ -548,7 +586,7 @@ fun BottomNavigationBar(navController: NavHostController, isButton1Enabled: Bool
             Row(modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                if (showNotesButton == true) {
+                if (showNotesButton) {
                 Button(
                     modifier = Modifier
                         .size(80.dp),
@@ -571,7 +609,7 @@ fun BottomNavigationBar(navController: NavHostController, isButton1Enabled: Bool
                     )
                 }
                 }
-                if (showGPTButton == true) {
+                if (showGPTButton) {
                 Button(
                     modifier = Modifier
                         .size(80.dp),
