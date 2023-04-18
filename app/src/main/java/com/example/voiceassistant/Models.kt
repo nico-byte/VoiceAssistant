@@ -34,13 +34,18 @@ class Models(chatHistoryManager: ChatHistoryManager, userManager: UserManager,
     }
 
     @OptIn(BetaOpenAI::class)
-    private val chatHistories = mutableMapOf<String, MutableList<ChatMessage>>()
-
-    @OptIn(BetaOpenAI::class)
     suspend fun chatGpt(prompt: String, documentId: String): String {
-        val chatHistory = chatHistoryManager.chatHistories.getOrPut(documentId) { mutableListOf() }
+        val chatData = chatHistoryManager.chatDataList.firstOrNull { it.chatHistoryName == documentId }
 
-        val messages = chatHistory + ChatMessage(role = ChatRole.User, content = prompt)
+        // Create a new ChatData entry if it doesn't exist
+        if (chatData == null) {
+            val newChatData = ChatData(chatHistoryName = documentId, chatHistory = mutableListOf())
+            chatHistoryManager.chatDataList.add(newChatData)
+            chatHistoryManager.saveChatHistories()
+            return chatGpt(prompt, documentId) // Recursive call with the newly created ChatData entry
+        }
+
+        val messages = chatData.chatHistory + ChatMessage(role = ChatRole.User, content = prompt)
         val chatCompletionRequest = ChatCompletionRequest(
             model = ModelId("gpt-3.5-turbo"),
             messages = messages
@@ -48,7 +53,7 @@ class Models(chatHistoryManager: ChatHistoryManager, userManager: UserManager,
         val response = openAI.chatCompletion(chatCompletionRequest)
         val chatMessage = response.choices.single().message!!
 
-        chatHistory.add(chatMessage)
+        chatData.chatHistory.add(chatMessage)
         chatHistoryManager.saveChatHistories()
 
         return chatMessage.content

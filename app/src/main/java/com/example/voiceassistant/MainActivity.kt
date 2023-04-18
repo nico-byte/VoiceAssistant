@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -35,6 +36,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.aallam.openai.api.BetaOpenAI
 import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -42,12 +44,15 @@ import kotlinx.coroutines.launch
 @ExperimentalAnimationApi
 class MainActivity : ComponentActivity() {
     private lateinit var userManager: UserManager
+    private lateinit var chatHistoryManager: ChatHistoryManager
 
+    @OptIn(BetaOpenAI::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "onCreate")
         val gson = Gson()
         userManager = UserManager(this, gson)
+        chatHistoryManager = ChatHistoryManager(this)
 
         setContent {
             this.window.statusBarColor = Color.Black.toArgb()
@@ -62,7 +67,7 @@ class MainActivity : ComponentActivity() {
                     contentScale = ContentScale.FillBounds, // or some other scale
                     modifier = Modifier.matchParentSize()
                 )
-                Navigator(userManager)
+                Navigator(userManager, chatHistoryManager)
             }
         }
     }
@@ -70,7 +75,7 @@ class MainActivity : ComponentActivity() {
 
 @ExperimentalAnimationApi
 @Composable
-fun Navigator(userManager: UserManager) {
+fun Navigator(userManager: UserManager, chatHistoryManager: ChatHistoryManager) {
     val navController = rememberNavController()
     val users by remember { userManager.loadUsersState() }
 
@@ -97,7 +102,7 @@ fun Navigator(userManager: UserManager) {
         composable("GPT") {
             val isButton1Enabled = true
             val isButton2Enabled = false
-            GPT(navController, userManager, isButton1Enabled, isButton2Enabled)
+            GPT(navController, userManager, isButton1Enabled, isButton2Enabled, chatHistoryManager)
             { navController.popBackStack("Notes", false) }
         }
     }
@@ -336,10 +341,12 @@ fun Notes(navController: NavHostController, userManager: UserManager,
     }
 }
 
+@OptIn(BetaOpenAI::class)
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun GPT(navController: NavHostController, userManager: UserManager,
-        isButton1Enabled: Boolean, isButton2Enabled: Boolean, onNotes: () -> Unit) {
+        isButton1Enabled: Boolean, isButton2Enabled: Boolean, chatHistoryManager: ChatHistoryManager,
+        onNotes: () -> Unit) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val user = userManager.loadUsers()
     val coroutineScope = rememberCoroutineScope()
@@ -357,84 +364,105 @@ fun GPT(navController: NavHostController, userManager: UserManager,
         },
         modifier = Modifier.zIndex(1f) // Set a higher zIndex for the ModalDrawer
     ) {
-        Scaffold(
-            backgroundColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    backgroundColor = Color.Transparent,
-                    contentColor = Color.White,
-                    title = { Text(text = "Chat GPT 3.5 Turbo") },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    drawerState.open()
-                                }
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Scaffold(
+                backgroundColor = Color.Transparent,
+                topBar = {
+                    TopAppBar(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White,
+                        title = { Text(text = "Chat GPT 3.5 Turbo") },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        drawerState.open()
+                                    }
+                                }) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Open Drawer")
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                // TODO: Add action for adding something
                             }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Open Drawer")
+                                Icon(
+                                    Icons.Filled.Info,
+                                    contentDescription = "App informations",
+                                    tint = Color.White
+                                )
+                            }
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = {
-                            // TODO: Add action for adding something
-                        }) {
-                            Icon(
-                                Icons.Filled.Info,
-                                contentDescription = "App informations",
-                                tint = Color.White
-                            )
-                        }
+                    )
+                },
+                floatingActionButton = {
+                    FloatingActionButton(onClick = { /*TODO*/ }) {
+                        Icon(Icons.Filled.Mic, "")
                     }
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = { /*TODO*/ }) {
-                    Icon(Icons.Filled.Mic, "")
-                }
-            },
-            floatingActionButtonPosition = FabPosition.End,
-            isFloatingActionButtonDocked = true,
-            bottomBar = { BottomNavigationBar(navController, isButton1Enabled, isButton2Enabled,
-            showNotesButton = true, showGPTButton = false) },
-            content = {  padding ->
-                // TODO add function for previewing and displaying chat history with chat gpt
-            }
+                },
+                floatingActionButtonPosition = FabPosition.End,
+                isFloatingActionButtonDocked = true,
+                bottomBar = {
+                    BottomNavigationBar(
+                        navController, isButton1Enabled, isButton2Enabled,
+                        showNotesButton = true, showGPTButton = false
+                    )
+                },
+                content = {}
+            )
+
+            MessageList(chatList = chatHistoryManager.chatDataList,
+                modifier = Modifier.align(Alignment.TopStart)
+                    .absoluteOffset(y=50.dp)
+                    .background(Color.DarkGray.copy(0.7f)))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun MessageList(chatList: List<ChatData>, modifier: Modifier) {
+    if (chatList.isEmpty()) {
+        Text(
+            text = "No chat history found.",
+            style = MaterialTheme.typography.h6,
+            modifier = Modifier
+                .padding(16.dp)
         )
+    } else {
+        LazyColumn(
+            modifier
+        ) {
+            items(chatList.size) { index ->
+                ListItem() {
+                    val chatData = chatList[index]
+                    Text(
+                        text = chatData.chatHistoryName,
+                        color = Color.Cyan,
+                        style = MaterialTheme.typography.h6,
+                        modifier = Modifier.padding(16.dp)
+                            .clickable(
+                                onClick = {
+
+                                }
+                            )
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun ChatGptHistory () {
-    Column(modifier = Modifier
-    ) {
-        //TODO: Add GPT UI and integrate API (Whisper and GPT)
-        val minWidth = 140
-        val maxWidth = 200
-        OutlinedTextField(
-            modifier = Modifier
-                .widthIn(minWidth.dp, maxWidth.dp)
-                .requiredWidth(maxWidth.dp + 150.dp)
-                .absoluteOffset(x = 50.dp),
-            value = username,
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = Color.White,
-                focusedBorderColor = Color.Cyan,
-                unfocusedBorderColor = Color.Cyan,
-                cursorColor = Color.White,
-                backgroundColor = Color.DarkGray,
-                disabledLabelColor = Color.Transparent,
-                focusedLabelColor = Color.Cyan,
-                unfocusedLabelColor = Color.Cyan,
-            ),
-            onValueChange = { newUsername ->
-                setUsername(newUsername)
-            },
-            shape = RoundedCornerShape(8.dp),
-            singleLine = false,
-            label = { Text("Textfield") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-        )
-    }
+fun Chat() {
+    Text(
+        text = "Howdy",
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable

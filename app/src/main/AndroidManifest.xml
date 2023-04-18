@@ -13,11 +13,6 @@
         android:theme="@style/Theme.VoiceAssistant"
         tools:targetApi="31">
         <activity
-            android:name=".Navigation"
-            android:exported="false"
-            android:label="@string/title_activity_navigation"
-            android:theme="@style/Theme.VoiceAssistant" />
-        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="standard">
