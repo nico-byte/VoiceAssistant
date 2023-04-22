@@ -1,14 +1,17 @@
 package com.example.voiceassistant
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
@@ -24,7 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,14 +43,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.aallam.openai.api.BetaOpenAI
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @ExperimentalAnimationApi
 class MainActivity : ComponentActivity() {
     private lateinit var userManager: UserManager
     private lateinit var chatHistoryManager: ChatHistoryManager
+    private lateinit var models: Models
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @OptIn(BetaOpenAI::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +63,7 @@ class MainActivity : ComponentActivity() {
         val gson = Gson()
         userManager = UserManager(this, gson)
         chatHistoryManager = ChatHistoryManager(this)
+        models = Models(chatHistoryManager, userManager, this)
 
         setContent {
             this.window.statusBarColor = Color.Black.toArgb()
@@ -67,15 +78,16 @@ class MainActivity : ComponentActivity() {
                     contentScale = ContentScale.FillBounds, // or some other scale
                     modifier = Modifier.matchParentSize()
                 )
-                Navigator(userManager, chatHistoryManager)
+                Navigator(userManager, chatHistoryManager, models)
             }
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @ExperimentalAnimationApi
 @Composable
-fun Navigator(userManager: UserManager, chatHistoryManager: ChatHistoryManager) {
+fun Navigator(userManager: UserManager, chatHistoryManager: ChatHistoryManager, models: Models) {
     val navController = rememberNavController()
     val users by remember { userManager.loadUsersState() }
 
@@ -103,6 +115,13 @@ fun Navigator(userManager: UserManager, chatHistoryManager: ChatHistoryManager) 
             val isButton1Enabled = true
             val isButton2Enabled = false
             GPT(navController, userManager, isButton1Enabled, isButton2Enabled, chatHistoryManager)
+            { navController.popBackStack("Notes", false) }
+        }
+        composable("Playground") {
+            val isButton1Enabled = true
+            val isButton2Enabled = false
+            FeaturePlayground(navController, userManager, isButton1Enabled, isButton2Enabled,
+                chatHistoryManager, models)
             { navController.popBackStack("Notes", false) }
         }
     }
@@ -389,6 +408,7 @@ fun GPT(navController: NavHostController, userManager: UserManager,
                         actions = {
                             IconButton(onClick = {
                                 // TODO: Add action for adding something
+                                navController.navigate("Playground")
                             }) {
                                 Icon(
                                     Icons.Filled.Info,
@@ -416,8 +436,9 @@ fun GPT(navController: NavHostController, userManager: UserManager,
             )
 
             MessageList(chatList = chatHistoryManager.chatDataList,
-                modifier = Modifier.align(Alignment.TopStart)
-                    .absoluteOffset(y=50.dp)
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .absoluteOffset(y = 50.dp)
                     .background(Color.DarkGray.copy(0.7f)))
         }
     }
@@ -444,7 +465,8 @@ fun MessageList(chatList: List<ChatData>, modifier: Modifier) {
                         text = chatData.chatHistoryName,
                         color = Color.Cyan,
                         style = MaterialTheme.typography.h6,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier
+                            .padding(16.dp)
                             .clickable(
                                 onClick = {
 
@@ -679,4 +701,120 @@ fun BottomNavigationBar(navController: NavHostController, isButton1Enabled: Bool
             }
         }
     )
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
+@Composable
+fun FeaturePlayground(navController: NavHostController, userManager: UserManager,
+        isButton1Enabled: Boolean, isButton2Enabled: Boolean, chatHistoryManager: ChatHistoryManager,
+        models: Models, onNotes: () -> Unit) {
+    val context = LocalContext.current
+    val helper = Helper()
+    val isRecording = remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val user = userManager.loadUsers()
+    val coroutineScope = rememberCoroutineScope()
+    val transcription = remember { mutableStateOf("") }
+
+    ModalDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(user, onCloseDrawer = {
+                coroutineScope.launch {
+                    delay(timeMillis = 250)
+                    drawerState.close()
+                }
+            })
+        },
+        modifier = Modifier.zIndex(1f) // Set a higher zIndex for the ModalDrawer
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Scaffold(
+                backgroundColor = Color.Transparent,
+                topBar = {
+                    TopAppBar(
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White,
+                        title = { Text(text = "FeaturePlayground") },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        drawerState.open()
+                                    }
+                                }) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Open Drawer")
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                // TODO: Add action for adding something
+                            }) {
+                                Icon(
+                                    Icons.Filled.Info,
+                                    contentDescription = "App informations",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    )
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {},
+                        modifier = Modifier
+                            .padding(32.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = {
+                                        val tempAudioFile = withContext(Dispatchers.IO) {
+                                            File.createTempFile("temp_audio", ".mp3",
+                                                context.cacheDir)
+                                        }
+                                        isRecording.value = true
+                                        coroutineScope.launch {
+                                            val result = models.whisper(isRecording,
+                                                tempAudioFile = tempAudioFile)
+                                            transcription.value = result
+                                        }
+                                        tryAwaitRelease()
+                                        isRecording.value = false
+                                    }
+                                )
+                            },
+                        content = {
+                            Icon(Icons.Filled.Mic, "")
+                        }
+                    )
+                },
+                floatingActionButtonPosition = FabPosition.End,
+                isFloatingActionButtonDocked = true,
+                bottomBar = {
+                    BottomNavigationBar(
+                        navController, isButton1Enabled, isButton2Enabled,
+                        showNotesButton = true, showGPTButton = false
+                    )
+                },
+                content = {}
+            )
+
+            Column(modifier = Modifier
+                .fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                helper.unsafeTextField(
+                    value =transcription.value,
+                    onValueChange = { transcription.value = it },
+                    label = "Transcription",
+                    readOnly = true
+                )
+            }
+        }
+    }
 }

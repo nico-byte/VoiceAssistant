@@ -37,6 +37,7 @@ class Helper() {
         isError: Boolean = false,
         errorMessage: String? = null,
         modifier: Modifier = Modifier,
+        readOnly: Boolean = false,
         trailingIcon: @Composable (() -> Unit)? = null
     ) {
         Column(modifier = modifier) {
@@ -56,6 +57,7 @@ class Helper() {
                 shape = RoundedCornerShape(8.dp),
                 singleLine = true,
                 label = { Text(label) },
+                readOnly = readOnly,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 isError = isError,
                 trailingIcon = trailingIcon,
